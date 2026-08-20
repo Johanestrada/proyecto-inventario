@@ -1,0 +1,2 @@
+El script scripts/build-desktop.ps1 reemplaza el contenido de esta carpeta por
+el app-image generado de Spring Boot antes de empaquetar Tauri.

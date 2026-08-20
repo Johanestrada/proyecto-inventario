@@ -1,157 +1,154 @@
 # Inventario App
 
-Sistema de gestión de inventario y ventas con **Spring Boot** y **React**. Arquitectura moderna, API RESTful y lista para producción con Docker Compose.
+Sistema local de inventario y ventas construido con Spring Boot y React. Puede ejecutarse en desarrollo con Docker, como un JAR único o como una aplicación Windows con su propio runtime de Java.
 
-## ¿Qué es?
+## Funcionalidades
 
-Un sistema completo para:
-- **Gestión de productos** (CRUD)
-- **Control de stock** y alertas
-- **Registro de ventas**
-- **Historial y reportes**
+- Gestión de productos, precios y stock.
+- Punto de venta con carrito y control de stock.
+- Historial de ventas, filtros y exportación CSV.
+- Validación de ventas, incluido control ante stock insuficiente.
 
-Ideal para pequeñas y medianas empresas que necesitan controlar su inventario y ventas de forma eficiente.
+## Arquitectura
 
-## Stack Tecnológico
+- `frontend/`: React + Vite.
+- `backend/`: Spring Boot, API REST y persistencia.
+- Durante `mvnw.cmd package`, Vite compila el frontend y Maven lo incorpora al JAR como recursos estáticos. Spring Boot sirve la interfaz y las rutas SPA (`/`, `/productos`, `/ventas` e `/historial`).
+- En escritorio, Tauri abre una ventana nativa que carga `http://127.0.0.1:8090/`. Spring Boot sirve desde el JAR los archivos React compilados; Tauri no carga `frontend/dist` directamente.
+- Los endpoints REST mantienen las mismas rutas y responden JSON cuando se solicitan como API.
 
-- **Java 17+** — Backend
-- **Spring Boot 3.x** — API REST
-- **React + Vite** — Frontend
-- **Axios** — Cliente HTTP
-- **Maven** — Build backend
-- **Docker & Docker Compose** — Contenedores
-- **H2 Database** (por defecto, adaptable a MySQL u otra)
+Documentación técnica:
 
-## Características Principales
+- [Arquitectura](docs/ARCHITECTURE.md)
+- [Aplicación de escritorio](docs/DESKTOP.md)
+- [Releases](docs/RELEASE.md)
 
-✅ Gestión de productos (alta, baja, modificación, consulta)
-✅ Control de stock y alertas de bajo inventario
-✅ Registro y gestión de ventas
-✅ Historial de ventas con filtros y exportación CSV
-✅ Interfaz web moderna y responsiva
-✅ API RESTful centralizada
-✅ Configuración lista para Docker
+## Persistencia por modo de ejecución
 
-## Arquitectura del Sistema
+| Modo | Base de datos | Uso |
+| --- | --- | --- |
+| Docker / perfil predeterminado | MySQL | Desarrollo con contenedores o ejecución del JAR conectada a MySQL. |
+| Perfil `cliente` / ejecutable Windows | SQLite | Uso local autónomo. El archivo se guarda en `%LOCALAPPDATA%\Inventario\data\inventario.db`. |
+| Pruebas | H2 en memoria | Sólo para pruebas automatizadas. |
 
-- **Frontend (React):** Interfaz de usuario que consume la API REST del backend. Todas las llamadas usan una baseURL configurable por variable de entorno.
-- **Backend (Spring Boot):** Expone endpoints REST para productos, ventas e historial. Gestiona la lógica de negocio y el acceso a la base de datos.
-- **Base de Datos:** Persistencia de productos, ventas y detalles de ventas. Por defecto H2, fácilmente adaptable a MySQL.
-- **Docker Compose:** Orquesta los servicios frontend y backend para facilitar el despliegue y desarrollo local.
+La base SQLite es local a cada usuario de Windows. Para respaldar los datos de la aplicación de escritorio, copia el archivo `inventario.db` con la aplicación cerrada.
 
-**Flujo general:**
-1. El usuario interactúa con la web (React)
-2. El frontend realiza peticiones HTTP al backend
-3. El backend procesa la lógica y accede a la base de datos
-4. Las respuestas se devuelven al frontend para visualización o interacción
+## Requisitos para desarrollo
 
-## Endpoints Principales
+- Java 17 o superior.
+- Node.js con npm.
+- MySQL y Docker Desktop sólo si usarás el modo Docker/MySQL.
 
-### Productos
-```
-GET    /productos                      → Listar productos
-GET    /productos/stock-bajo?limite=5  → Productos con stock bajo
-POST   /productos                      → Crear producto
-PUT    /productos/{id}                 → Actualizar producto
-DELETE /productos/{id}                 → Eliminar producto
+## Ejecutar con Docker (MySQL)
+
+Crea `.env` en la raíz, con los valores que usará Docker Compose:
+
+```env
+MYSQL_ROOT_PASSWORD=una_clave_segura
+MYSQL_DATABASE=ecommerce_db
+MYSQL_USER=admin
+MYSQL_PASSWORD=admin123
 ```
 
-### Ventas
-```
-POST   /ventas                         → Registrar nueva venta
+Luego ejecuta:
+
+```powershell
+docker compose up --build
 ```
 
-### Historial de Ventas
+## Desarrollo separado
+
+En una terminal:
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
 ```
-GET    /ventas/historial                       → Listar historial completo
+
+En otra:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Vite queda disponible normalmente en `http://localhost:5173`; CORS ya está permitido para este flujo de desarrollo.
+
+## JAR integrado (sin Docker ni Vite)
+
+El siguiente comando compila React/Vite, ejecuta las pruebas y genera un JAR que contiene tanto Spring Boot como la interfaz web:
+
+```powershell
+cd backend
+.\mvnw.cmd package
+```
+
+El artefacto resultante es:
+
+```text
+backend\target\inventario-0.0.1-SNAPSHOT.jar
+```
+
+Para usar este JAR con MySQL local:
+
+```powershell
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "3306"
+$env:DB_NAME = "ecommerce_db"
+$env:DB_USER = "admin"
+$env:DB_PASSWORD = "admin123"
+
+java -jar .\target\inventario-0.0.1-SNAPSHOT.jar
+```
+
+Abre `http://localhost:8080`. No necesitas ejecutar Vite en este modo.
+
+## Aplicación Windows local
+
+La aplicación instalada se ejecuta desde el acceso directo de Inventario. En
+desarrollo y empaquetado, consulta [DESKTOP.md](docs/DESKTOP.md). La primera
+ejecución crea una base SQLite local vacía en
+`%LOCALAPPDATA%\Inventario\data\inventario.db`.
+
+## Endpoints REST principales
+
+```text
+GET    /productos
+GET    /productos/stock-bajo?limite=5
+POST   /productos
+PUT    /productos/{id}
+DELETE /productos/{id}
+
+POST   /ventas
+GET    /ventas/historial
 GET    /ventas/historial/por-fecha?fecha=YYYY-MM-DD
 GET    /ventas/historial/por-rango?fechaInicio=YYYY-MM-DD&fechaFin=YYYY-MM-DD
-GET    /ventas/exportar/csv                    → Exportar historial completo a CSV
+GET    /ventas/exportar/csv
 GET    /ventas/exportar/csv/por-rango?fechaInicio=YYYY-MM-DD&fechaFin=YYYY-MM-DD
 ```
 
-## Instalación y Uso
+## Pruebas
 
-### Requisitos
-- Docker y Docker Compose
+Desde `backend`:
 
-### Iniciar con Docker Compose
-```bash
-docker-compose up --build
-```
-Esto levantará backend y frontend en contenedores separados. El frontend se conecta automáticamente al backend usando la variable de entorno configurada.
-
-### Ejecución manual (desarrollo)
-
-1. **Backend**
-   ```bash
-   cd backend
-   ./mvnw spring-boot:run
-   ```
-   El backend estará en http://localhost:8080
-
-2. **Frontend**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   El frontend estará en http://localhost:5173 (o el puerto configurado por Vite).
-
-## Variables de Entorno
-
-### Frontend (`frontend/.env`)
-```
-VITE_API_URL=http://localhost:8080
+```powershell
+.\mvnw.cmd test
 ```
 
-### Backend
-- Configuración de base de datos y otros parámetros en `backend/src/main/resources/application.properties`
+Las pruebas usan H2 en memoria e incluyen casos de ventas concurrentes y productos duplicados dentro de una venta.
 
-## Estructura del Proyecto
+## Commit y publicación de Windows
 
+Los binarios, app-images, bases SQLite, `target` y `node_modules` están
+excluidos por `.gitignore`. Consulta [RELEASE.md](docs/RELEASE.md) para revisar
+el staging, crear commits y publicar el instalador en GitHub Releases.
+
+## Estructura relevante
+
+```text
+frontend/       React + Vite
+backend/        Spring Boot, API REST y persistencia
+desktop/        Tauri y ventana nativa Windows
+docs/           Arquitectura, escritorio y releases
 ```
-Proyecto-inventario/
-├── backend/
-│   ├── Dockerfile
-│   ├── pom.xml
-│   └── src/
-│       └── main/
-│           ├── java/com/inventario/inventario/
-│           │   ├── controller/      # Controladores REST
-│           │   ├── service/         # Lógica de negocio
-│           │   ├── repository/      # Acceso a datos
-│           │   ├── dto/             # Objetos de transferencia
-│           │   └── config/          # Configuración (CORS, etc)
-│           └── resources/
-│               └── application.properties
-│
-├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── .env
-│   └── src/
-│       ├── pages/        # Vistas principales (Productos, Ventas, etc)
-│       ├── components/   # Componentes reutilizables
-│       ├── services/     # Lógica de conexión API (Axios)
-│       └── hooks/        # Custom hooks
-│
-├── docker-compose.yml
-└── README.md
-```
-
-## Próximas Mejoras
-
-- [ ] Integración con bases de datos externas (MySQL, PostgreSQL)
-- [ ] Autenticación y control de usuarios
-- [ ] Reportes avanzados y dashboards
-- [ ] Notificaciones automáticas de stock bajo
-- [ ] Pruebas unitarias y de integración
-- [ ] Despliegue en la nube (AWS, Azure, GCP)
-- [ ] Internacionalización (i18n)
-
----
-
-## Contacto
-
-johan.manuel.estrada.plaza@gmail.com

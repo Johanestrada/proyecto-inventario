@@ -1,16 +1,10 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import API from "../services/api";
 
 function Sidebar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stockBajoCount, setStockBajoCount] = useState(0);
-  const location = useLocation();
-
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location]);
-
   useEffect(() => {
     const fetchStockBajo = async () => {
       try {
@@ -41,8 +35,7 @@ function Sidebar() {
     {
       section: "Ventas",
       links: [
-        { to: "/ventas", icon: "💰", label: "Registrar Venta" },
-        { to: "/carrito", icon: "🛒", label: "Carrito" },
+        { to: "/ventas", icon: "🛒", label: "Punto de Venta" },
         { to: "/historial", icon: "📋", label: "Historial" },
       ],
     },
@@ -80,6 +73,7 @@ function Sidebar() {
                   key={link.to}
                   to={link.to}
                   end={link.to === "/"}
+                  onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) =>
                     `sidebar-link ${isActive ? "active" : ""}`
                   }

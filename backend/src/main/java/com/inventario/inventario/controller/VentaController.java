@@ -9,6 +9,7 @@ import com.inventario.inventario.model.Venta;
 import com.inventario.inventario.service.VentaService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +33,7 @@ public class VentaController {
         return ventaService.crearVenta(request);
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Map<String, Object>> obtenerVentas() {
         List<Venta> ventas = ventaService.obtenerVentas();
         return ventas.stream().map(venta -> {
@@ -85,40 +86,17 @@ public class VentaController {
 
     @GetMapping("/historial")
     public List<VentaResponse> obtenerHistorial() {
-        List<Venta> ventas = ventaService.obtenerVentas();
-        return ventas.stream().map(venta -> {
-            List<DetalleResponse> detalles = venta.getDetalles().stream().map(detalle -> {
-                ProductoResponse producto = new ProductoResponse(
-                    detalle.getProducto().getId(),
-                    detalle.getProducto().getNombre(),
-                    detalle.getProducto().getPrecio(),
-                    detalle.getProducto().getStock()
-                );
-                return new DetalleResponse(
-                    detalle.getId(),
-                    detalle.getCantidad(),
-                    detalle.getPrecioUnitario(),
-                    detalle.getSubtotal(),
-                    producto
-                );
-            }).toList();
-            return new VentaResponse(
-                venta.getId(),
-                venta.getFecha(),
-                venta.getTotal(),
-                detalles
-            );
-        }).toList();
+        return convertirARespuestas(ventaService.obtenerVentas());
     }
 
     @GetMapping("/historial/por-fecha")
-    public List<Venta> filtrarPorFecha(@RequestParam LocalDate fecha) {
-        return ventaService.filtrarPorFecha(fecha);
+    public List<VentaResponse> filtrarPorFecha(@RequestParam LocalDate fecha) {
+        return convertirARespuestas(ventaService.filtrarPorFecha(fecha));
     }
 
     @GetMapping("/historial/por-rango")
-    public List<Venta> filtrarPorRango(@RequestParam LocalDate fechaInicio, @RequestParam LocalDate fechaFin) {
-        return ventaService.filtrarPorRangoFechas(fechaInicio, fechaFin);
+    public List<VentaResponse> filtrarPorRango(@RequestParam LocalDate fechaInicio, @RequestParam LocalDate fechaFin) {
+        return convertirARespuestas(ventaService.filtrarPorRangoFechas(fechaInicio, fechaFin));
     }
 
     @GetMapping("/exportar/csv")
@@ -138,5 +116,26 @@ public class VentaController {
         headers.add("Content-Disposition", "attachment; filename=\"" + nombreArchivo + "\"");
         headers.add("Content-Type", "text/csv; charset=utf-8");
         return new ResponseEntity<>(csv, headers, HttpStatus.OK);
+    }
+
+    private List<VentaResponse> convertirARespuestas(List<Venta> ventas) {
+        return ventas.stream().map(venta -> {
+            List<DetalleResponse> detalles = venta.getDetalles().stream().map(detalle -> {
+                ProductoResponse producto = new ProductoResponse(
+                        detalle.getProducto().getId(),
+                        detalle.getProducto().getNombre(),
+                        detalle.getProducto().getPrecio(),
+                        detalle.getProducto().getStock()
+                );
+                return new DetalleResponse(
+                        detalle.getId(),
+                        detalle.getCantidad(),
+                        detalle.getPrecioUnitario(),
+                        detalle.getSubtotal(),
+                        producto
+                );
+            }).toList();
+            return new VentaResponse(venta.getId(), venta.getFecha(), venta.getTotal(), detalles);
+        }).toList();
     }
 }

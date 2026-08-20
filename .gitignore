@@ -50,3 +50,18 @@ yarn-error.log*
 # =========================
 .DS_Store
 Thumbs.db
+
+# Prevent accidental inclusion of local SQLite DB and logs
+backend/tmp/inventario.db
+*.db
+target/logs/
+# Desktop build artifacts
+/app-image/
+/backend/Inventario/
+/desktop/node_modules/
+/desktop/src-tauri/target/
+/desktop/src-tauri/resources/server/
+!/desktop/src-tauri/resources/
+!/desktop/src-tauri/resources/server/
+!/desktop/src-tauri/resources/server/.gitkeep
+/desktop/src-tauri/resources/server/Inventario/

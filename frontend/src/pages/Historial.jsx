@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API, {
+import {
   getHistorialCompleto,
   getHistorialPorFecha,
   getHistorialPorRango,
@@ -22,7 +22,7 @@ function Historial() {
     try {
       const res = await getHistorialPorFecha(fecha);
       setVentas(res.data);
-    } catch (e) {
+    } catch {
       setVentas([]);
     }
     setLoading(false);
@@ -33,7 +33,7 @@ function Historial() {
     try {
       const res = await getHistorialCompleto();
       setVentas(res.data);
-    } catch (e) {
+    } catch {
       setVentas([]);
     }
     setLoading(false);
@@ -179,14 +179,24 @@ function Historial() {
               </thead>
               <tbody>
                 {ventas.map((v) => {
-                  const detalle = v.detalles && v.detalles.length > 0 ? v.detalles[0] : null;
+                  const detalles = v.detalles || [];
                   return (
                     <tr key={v.id}>
                       <td style={{ color: "var(--text-muted)" }}>#{v.id}</td>
                       <td style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-                        {detalle ? detalle.producto.nombre : "Producto desconocido"}
+                        {detalles.length > 0
+                          ? detalles.map((detalle) => (
+                            <div key={detalle.id}>
+                              {detalle.producto?.nombre || "Producto desconocido"}
+                            </div>
+                          ))
+                          : "Sin detalles"}
                       </td>
-                      <td>{detalle ? detalle.cantidad : ""}</td>
+                      <td>
+                        {detalles.map((detalle) => (
+                          <div key={detalle.id}>{detalle.cantidad}</div>
+                        ))}
+                      </td>
                       <td style={{ color: "var(--success)", fontWeight: 600 }}>
                         ${v.total?.toLocaleString()}
                       </td>

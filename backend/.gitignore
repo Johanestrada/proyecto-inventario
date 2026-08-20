@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local tmp DBs and tmp folder
+tmp/
+tmp/*.db

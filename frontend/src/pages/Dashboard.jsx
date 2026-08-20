@@ -12,6 +12,33 @@ import {
   AreaChart,
 } from "recharts";
 
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        padding: "10px 14px",
+        boxShadow: "var(--shadow-md)",
+      }}
+    >
+      <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, margin: 0 }}>
+        {label}
+      </p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: "var(--accent)", fontSize: 12, margin: "4px 0 0" }}>
+          {p.name}: ${p.value?.toLocaleString()}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function Dashboard() {
   const [ventasDia, setVentasDia] = useState([]);
   const [topProductos, setTopProductos] = useState([]);
@@ -19,59 +46,34 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    cargarDatos();
+    const metricasRequest = API.get("/ventas/dashboard")
+      .then((res) => res.data)
+      .catch((e) => {
+        console.error("Error metricas", e);
+        return null;
+      });
+    const ventasDiaRequest = API.get("/ventas/ventas-por-dia")
+      .then((res) => res.data)
+      .catch((e) => {
+        console.error("Error ventas dia", e);
+        return [];
+      });
+    const topProductosRequest = API.get("/ventas/top-productos")
+      .then((res) => res.data)
+      .catch((e) => {
+        console.error("Error top productos", e);
+        return [];
+      });
+
+    Promise.all([metricasRequest, ventasDiaRequest, topProductosRequest]).then(
+      ([metricasData, ventasDiaData, topProductosData]) => {
+        if (metricasData) setMetricas(metricasData);
+        setVentasDia(ventasDiaData);
+        setTopProductos(topProductosData);
+        setLoading(false);
+      }
+    );
   }, []);
-
-  const cargarDatos = async () => {
-    setLoading(true);
-    try {
-      const met = await API.get("/ventas/dashboard");
-      setMetricas(met.data);
-    } catch (e) {
-      console.error("Error metricas", e);
-    }
-
-    try {
-      const vDia = await API.get("/ventas/ventas-por-dia");
-      setVentasDia(vDia.data);
-    } catch (e) {
-      console.error("Error ventas dia", e);
-    }
-
-    try {
-      const top = await API.get("/ventas/top-productos");
-      setTopProductos(top.data);
-    } catch (e) {
-      console.error("Error top productos", e);
-    }
-    setLoading(false);
-  };
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div
-          style={{
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-md)",
-            padding: "10px 14px",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, margin: 0 }}>
-            {label}
-          </p>
-          {payload.map((p, i) => (
-            <p key={i} style={{ color: "var(--accent)", fontSize: 12, margin: "4px 0 0" }}>
-              {p.name}: ${p.value?.toLocaleString()}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (loading) {
     return (

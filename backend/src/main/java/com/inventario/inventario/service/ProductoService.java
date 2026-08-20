@@ -26,6 +26,7 @@ public class ProductoService {
     }
 
     public Producto guardar(Producto producto) {
+        validarProducto(producto);
         return productoRepository.save(producto);
     }
 
@@ -34,7 +35,9 @@ public class ProductoService {
     }
 
     public Producto actualizar(Long id, Producto producto) {
-        Producto productoExistente = productoRepository.findById(id).orElseThrow();
+        validarProducto(producto);
+        Producto productoExistente = productoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con ID: " + id));
 
         productoExistente.setNombre(producto.getNombre());
         productoExistente.setPrecio(producto.getPrecio());
@@ -45,14 +48,36 @@ public class ProductoService {
 
     @Transactional
     public void eliminar(Long id) {
-        // Elimina primero los detalles de venta asociados al producto
         if (detalleVentaRepository.existsByProductoId(id)) {
-            detalleVentaRepository.deleteByProductoId(id);
+            throw new IllegalArgumentException(
+                    "No se puede eliminar un producto con ventas registradas. Conserva el historial y actualiza su stock a 0."
+            );
+        }
+        if (!productoRepository.existsById(id)) {
+            throw new IllegalArgumentException("Producto no encontrado con ID: " + id);
         }
         productoRepository.deleteById(id);
     }
 
     public List<Producto> stockBajo(Integer limite) {
-        return productoRepository.findByStockLessThan(limite);
+        if (limite == null || limite < 0) {
+            throw new IllegalArgumentException("El l\u00edmite de stock debe ser un n\u00famero mayor o igual a 0.");
+        }
+        return productoRepository.findByStockLessThanEqual(limite);
+    }
+
+    private void validarProducto(Producto producto) {
+        if (producto == null) {
+            throw new IllegalArgumentException("Los datos del producto son obligatorios.");
+        }
+        if (producto.getNombre() == null || producto.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del producto es obligatorio.");
+        }
+        if (producto.getPrecio() == null || producto.getPrecio() < 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor o igual a 0.");
+        }
+        if (producto.getStock() == null || producto.getStock() < 0) {
+            throw new IllegalArgumentException("El stock debe ser mayor o igual a 0.");
+        }
     }
 }
