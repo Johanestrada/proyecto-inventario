@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class VentaService {
@@ -30,18 +32,33 @@ public class VentaService {
 
     @Transactional
     public Venta crearVenta(VentaRequest request) {
+        if (request == null || request.getDetalles() == null || request.getDetalles().isEmpty()) {
+            throw new IllegalArgumentException("La venta debe incluir al menos un producto.");
+        }
+
         Venta venta = new Venta();
         venta.setFecha(LocalDateTime.now());
 
         double total = 0;
         List<DetalleVenta> detalles = new ArrayList<>();
+        Set<Long> productosIncluidos = new HashSet<>();
 
         for (DetalleRequest d : request.getDetalles()) {
-            Producto producto = productoRepository.findById(d.getProductoId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + d.getProductoId()));
+            if (d == null || d.getProductoId() == null) {
+                throw new IllegalArgumentException("Cada detalle debe indicar un producto.");
+            }
+            if (d.getCantidad() == null || d.getCantidad() <= 0) {
+                throw new IllegalArgumentException("La cantidad de cada producto debe ser mayor que 0.");
+            }
+            if (!productosIncluidos.add(d.getProductoId())) {
+                throw new IllegalArgumentException("Un producto no puede repetirse dentro de la misma venta.");
+            }
+
+            Producto producto = productoRepository.findByIdForUpdate(d.getProductoId())
+                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con ID: " + d.getProductoId()));
 
             if (producto.getStock() < d.getCantidad()) {
-                throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
+                throw new IllegalArgumentException("Stock insuficiente para: " + producto.getNombre());
             }
 
             DetalleVenta detalle = new DetalleVenta();

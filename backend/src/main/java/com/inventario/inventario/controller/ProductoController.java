@@ -2,7 +2,7 @@ package com.inventario.inventario.controller;
 
 import com.inventario.inventario.model.Producto;
 import com.inventario.inventario.service.ProductoService;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +19,7 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Producto> obtenerProductos() {
         return productoService.obtenerTodos();
     }
@@ -40,13 +40,9 @@ public class ProductoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
-        try {
-            productoService.eliminar(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
+        productoService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/stock-bajo")

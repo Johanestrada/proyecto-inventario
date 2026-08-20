@@ -98,6 +98,36 @@ Esto levantará backend y frontend en contenedores separados. El frontend se con
    ```
    El frontend estará en http://localhost:5173 (o el puerto configurado por Vite).
 
+### Aplicación local integrada (sin Docker ni Vite)
+
+El empaquetado Maven compila React/Vite automáticamente e incluye el resultado dentro del JAR de Spring Boot. No copies `frontend/dist` manualmente y no ejecutes Vite para este modo.
+
+Requisitos en Windows:
+
+- Java 17 o superior (se recomienda configurar `JAVA_HOME` al JDK que usarás).
+- Node.js y npm instalados.
+- MySQL ejecutándose localmente; este modo conserva MySQL, no usa SQLite.
+
+Desde PowerShell, en la raíz del proyecto:
+
+```powershell
+cd backend
+.\mvnw.cmd package
+```
+
+Configura la conexión a tu MySQL local y ejecuta el JAR. Los valores de ejemplo coinciden con la configuración actual:
+
+```powershell
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "3306"
+$env:DB_NAME = "ecommerce_db"
+$env:DB_USER = "admin"
+$env:DB_PASSWORD = "admin123"
+java -jar .\target\inventario-0.0.1-SNAPSHOT.jar
+```
+
+Abre http://localhost:8080. Las rutas `/`, `/productos`, `/ventas` y `/historial` cargan la aplicación React directamente desde Spring Boot. Las solicitudes de API siguen usando las mismas rutas y devuelven JSON; CORS permanece disponible para Vite durante el desarrollo.
+
 ## Variables de Entorno
 
 ### Frontend (`frontend/.env`)

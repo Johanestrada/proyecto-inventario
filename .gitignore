@@ -50,3 +50,8 @@ yarn-error.log*
 # =========================
 .DS_Store
 Thumbs.db
+
+# Prevent accidental inclusion of local SQLite DB and logs
+backend/tmp/inventario.db
+*.db
+target/logs/

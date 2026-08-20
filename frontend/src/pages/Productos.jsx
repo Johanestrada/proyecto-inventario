@@ -1,11 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import API from "../services/api";
-import { useCarrito } from "../hooks/useCarrito";
 
 function Productos() {
-  // Carrito global
-  const { agregarAlCarrito } = useCarrito();
-  const [cantidadAgregar, setCantidadAgregar] = useState({}); // { [productoId]: cantidad }
   const [productos, setProductos] = useState([]);
   const [stockBajo, setStockBajo] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +107,8 @@ function Productos() {
       await Promise.all([cargarProductos(), cargarStockBajo()]);
     } catch (e) {
       console.error("Error guardando producto", e);
-      addToast("Error al guardar producto", "error");
+      const mensaje = e.response?.data?.message || e.response?.data || "Error al guardar producto";
+      addToast(String(mensaje), "error");
     }
   };
 
@@ -130,7 +127,8 @@ function Productos() {
       await Promise.all([cargarProductos(), cargarStockBajo()]);
     } catch (e) {
       console.error("Error eliminando", e);
-      addToast("Error al eliminar producto", "error");
+      const mensaje = e.response?.data?.message || e.response?.data || "Error al eliminar producto";
+      addToast(String(mensaje), "error");
     }
   };
 
@@ -292,33 +290,6 @@ function Productos() {
                           onClick={() => confirmDelete(p)}
                         >
                           🗑
-                        </button>
-                        {/* Agregar al carrito */}
-                        <input
-                          type="number"
-                          min={1}
-                          max={p.stock}
-                          value={cantidadAgregar[p.id] || 1}
-                          onChange={e => {
-                            let val = parseInt(e.target.value, 10);
-                            if (isNaN(val) || val < 1) val = 1;
-                            if (val > p.stock) val = p.stock;
-                            setCantidadAgregar(c => ({ ...c, [p.id]: val }));
-                          }}
-                          style={{ width: 50, marginRight: 4 }}
-                          disabled={p.stock === 0}
-                        />
-                        <button
-                          className="btn btn-success"
-                          style={{ fontSize: 14, padding: '2px 8px' }}
-                          disabled={p.stock === 0}
-                          onClick={() => {
-                            agregarAlCarrito(p.id, cantidadAgregar[p.id] || 1);
-                            setCantidadAgregar(c => ({ ...c, [p.id]: 1 }));
-                            addToast(`Añadido: ${p.nombre}`, "success");
-                          }}
-                        >
-                          ➕ Agregar
                         </button>
                       </div>
                     </td>
