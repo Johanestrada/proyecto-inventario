@@ -14,7 +14,14 @@ Sistema local de inventario y ventas construido con Spring Boot y React. Puede e
 - `frontend/`: React + Vite.
 - `backend/`: Spring Boot, API REST y persistencia.
 - Durante `mvnw.cmd package`, Vite compila el frontend y Maven lo incorpora al JAR como recursos estáticos. Spring Boot sirve la interfaz y las rutas SPA (`/`, `/productos`, `/ventas` e `/historial`).
+- En escritorio, Tauri abre una ventana nativa que carga `http://127.0.0.1:8090/`. Spring Boot sirve desde el JAR los archivos React compilados; Tauri no carga `frontend/dist` directamente.
 - Los endpoints REST mantienen las mismas rutas y responden JSON cuando se solicitan como API.
+
+Documentación técnica:
+
+- [Arquitectura](docs/ARCHITECTURE.md)
+- [Aplicación de escritorio](docs/DESKTOP.md)
+- [Releases](docs/RELEASE.md)
 
 ## Persistencia por modo de ejecución
 
@@ -99,30 +106,10 @@ Abre `http://localhost:8080`. No necesitas ejecutar Vite en este modo.
 
 ## Aplicación Windows local
 
-La distribución recomendada es:
-
-```text
-app-image\Inventario\Inventario.exe
-```
-
-Ejecuta `Inventario.exe` directamente. Incluye un runtime de Java, activa automáticamente el perfil `cliente`, usa SQLite y atiende la aplicación en `http://localhost:8090`.
-
-La primera ejecución crea la base local en:
-
-```text
-%LOCALAPPDATA%\Inventario\data\inventario.db
-```
-
-La instalación no incluye una base SQLite ni datos iniciales. La base se crea
-vacía al arrancar por primera vez y sólo contiene las tablas necesarias.
-
-No muevas el ejecutable por separado: debe conservarse toda la carpeta `app-image\Inventario`, incluidos `app`, `runtime` y `Inventario.exe`.
-
-`backend\Inventario` es una salida auxiliar de empaquetado. Para compartir o ejecutar la versión de escritorio, utiliza `app-image\Inventario`.
-
-## Construir la imagen Windows
-
-El proyecto deja preparados los artefactos necesarios para `jpackage` dentro de `backend\target\jpackage` al ejecutar `mvnw.cmd package`: un JAR plano y las dependencias de runtime. La imagen resultante debe incluir ese JAR, la carpeta `lib` y el runtime Java; no se genera automáticamente por Maven.
+La aplicación instalada se ejecuta desde el acceso directo de Inventario. En
+desarrollo y empaquetado, consulta [DESKTOP.md](docs/DESKTOP.md). La primera
+ejecución crea una base SQLite local vacía en
+`%LOCALAPPDATA%\Inventario\data\inventario.db`.
 
 ## Endpoints REST principales
 
@@ -154,40 +141,14 @@ Las pruebas usan H2 en memoria e incluyen casos de ventas concurrentes y product
 ## Commit y publicación de Windows
 
 Los binarios, app-images, bases SQLite, `target` y `node_modules` están
-excluidos por `.gitignore`. Antes de crear un commit revisa únicamente los
-archivos fuente y de configuración:
-
-```powershell
-git status --short --ignored
-git diff --check
-git add .gitignore README.md backend frontend desktop .github
-git diff --cached --stat
-git commit -m "Integra aplicacion de escritorio Tauri"
-git push origin main
-```
-
-Para publicar el instalador en GitHub sin subirlo al repositorio, crea un tag:
-
-```powershell
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-El workflow `.github/workflows/release-windows.yml` construye todo desde cero
-y adjunta `Inventario_0.1.0_x64-setup.exe` a la Release de GitHub. El instalador
-no se versiona como archivo del repositorio.
+excluidos por `.gitignore`. Consulta [RELEASE.md](docs/RELEASE.md) para revisar
+el staging, crear commits y publicar el instalador en GitHub Releases.
 
 ## Estructura relevante
 
 ```text
-proyecto-inventario/
-├── frontend/                 # React + Vite
-├── backend/                  # Spring Boot, perfiles MySQL/cliente y Maven
-│   ├── src/main/resources/
-│   │   ├── application.properties           # MySQL
-│   │   └── application-cliente.properties   # SQLite local
-│   └── target/               # JAR y artefactos de build (no versionados)
-├── app-image/Inventario/     # Distribución Windows con Inventario.exe
-├── docker-compose.yml
-└── README.md
+frontend/       React + Vite
+backend/        Spring Boot, API REST y persistencia
+desktop/        Tauri y ventana nativa Windows
+docs/           Arquitectura, escritorio y releases
 ```
